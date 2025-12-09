@@ -1,0 +1,6 @@
+{
+  "name": "Stat'Master 3ème",
+  "description": "Application interactive pour maîtriser le chapitre Statistiques (3ème) : cours, exercices et tuteur IA.",
+  "requestFramePermissions": ["camera"]
+}
+
