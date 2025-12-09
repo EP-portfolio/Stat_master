@@ -27,6 +27,48 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+# Styles globaux (amélioration UI)
+st.markdown(
+    """
+    <style>
+    :root {
+        --primary: #4f46e5;
+        --bg: #f6f7fb;
+        --card: #ffffff;
+        --border: #e5e7eb;
+    }
+    body {
+        background: var(--bg);
+    }
+    .block-container {
+        padding-top: 1.5rem;
+        padding-bottom: 1.5rem;
+        max-width: 1100px;
+        margin: 0 auto;
+    }
+    .stButton>button, .stDownloadButton>button {
+        background: var(--primary);
+        color: #fff;
+        border: none;
+        padding: 0.65rem 1.1rem;
+        border-radius: 10px;
+        font-weight: 600;
+    }
+    .stButton>button:hover {
+        background: #4338ca;
+    }
+    .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 1.25rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 # Initialisation de la session state
 if "current_exercise" not in st.session_state:
     st.session_state.current_exercise = None
@@ -140,12 +182,12 @@ def get_frequency_data(values):
 def render_home():
     """Page d'accueil"""
     st.markdown("""
-    <div style="text-align: center; padding: 2rem 0;">
-        <h1 style="font-size: 3rem; margin-bottom: 1rem;">
+    <div style="text-align: center; padding: 1.5rem 0;">
+        <h1 style="font-size: 2.7rem; margin-bottom: 0.5rem; color:#0f172a;">
             Maîtrise les <span style="color: #4f46e5;">Statistiques</span>
         </h1>
-        <p style="font-size: 1.25rem; color: #6b7280; max-width: 600px; margin: 0 auto;">
-            Tout ce qu'il te faut pour réussir ton brevet : cours interactifs, exercices infinis et un prof IA disponible 24/7.
+        <p style="font-size: 1.05rem; color: #475569; max-width: 680px; margin: 0 auto;">
+            Tout ce qu'il te faut pour réussir le brevet : cours clairs, entraînement rapide, correction IA étape par étape, et bilan parent.
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -355,44 +397,54 @@ def render_ai_tutor():
         with st.chat_message("user"):
             st.write(prompt)
         
-        # Générer la réponse avec Gemini
+        # Générer la réponse avec Gemini en réutilisant le client initialisé
         if st.session_state.gemini_client:
             with st.chat_message("assistant"):
                 with st.spinner("Réflexion en cours..."):
                     try:
-                        import google.generativeai as genai
-                        genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-                        model = genai.GenerativeModel("gemini-2.0-flash-exp")
-                        
+                        history_text = "\n".join(
+                            [
+                                f"{'Élève' if m['role'] == 'user' else 'Professeur'}: {m['text']}"
+                                for m in st.session_state.chat_messages[-6:]
+                            ]
+                        )
+
                         system_instruction = """
-                        Tu es un professeur de mathématiques bienveillant pour des élèves de 3ème en France (collège).
-                        Tu dois expliquer les concepts du chapitre 'Statistiques' : moyenne, médiane, étendue, effectifs, fréquences.
-                        Tes explications doivent être simples, claires et imagées.
-                        Si l'élève pose une question, réponds pédagogiquement sans donner la réponse directe s'il s'agit d'un exercice, mais guide-le.
-                        Utilise le vouvoiement ou le tutoiement selon ce qui semble naturel mais reste respectueux et encourageant.
-                        Utilise le gras (**texte**) pour mettre en valeur les mots importants.
-                        Sois concis.
+                        Tu es un professeur de mathématiques pour des élèves de 3ème.
+                        Chapitre : Statistiques (moyenne, médiane, étendue, effectifs, fréquences).
+                        Réponds de façon claire, courte, pédagogique. Utilise le gras (**texte**) pour les notions clés.
+                        Ne donne pas la réponse directe d'un exercice, guide l'élève par étapes.
                         """
-                        
-                        # Construire l'historique
-                        history_text = "\n".join([
-                            f"{'Élève' if m['role'] == 'user' else 'Professeur'}: {m['text']}"
-                            for m in st.session_state.chat_messages[-5:]  # Derniers 5 messages
-                        ])
-                        
-                        full_prompt = f"{system_instruction}\n\nHistorique:\n{history_text}\n\nÉlève: {prompt}\nProfesseur:"
-                        
-                        response = model.generate_content(full_prompt)
-                        response_text = response.text
-                        
+
+                        prompt_text = (
+                            f"{system_instruction}\n\nHistorique:\n{history_text}\n\nÉlève: {prompt}\nProfesseur:"
+                        )
+
+                        # Essayer plusieurs modèles via le client existant
+                        models = ["gemini-2.0-flash-exp", "gemini-1.5-flash", "gemini-pro"]
+                        response_text = None
+                        for _ in models:
+                            try:
+                                response = st.session_state.gemini_client.model.generate_content(
+                                    prompt_text
+                                )
+                                response_text = response.text
+                                if response_text:
+                                    break
+                            except Exception:
+                                continue
+
+                        if not response_text:
+                            raise RuntimeError("Aucune réponse valide reçue.")
+
                         st.write(response_text)
                         st.session_state.chat_messages.append({"role": "model", "text": response_text})
-                    except Exception as e:
-                        error_msg = "Oups, j'ai eu un petit problème de connexion. Réessaie !"
+                    except Exception:
+                        error_msg = "Le tuteur ne répond pas. Vérifie la clé API ou réessaie."
                         st.error(error_msg)
                         st.session_state.chat_messages.append({"role": "model", "text": error_msg})
         else:
-            st.warning("⚠️ Veuillez configurer la clé API Gemini dans la barre latérale")
+            st.warning("Configure la clé API Gemini dans la barre latérale.")
 
 
 def render_exercises_ia():
