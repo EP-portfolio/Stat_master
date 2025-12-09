@@ -1,0 +1,29 @@
+# Environment
+.env
+.env.*
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pdb
+
+# Streamlit
+.streamlit/
+
+# Editors/OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Build/Reports
+*.zip
+*.tar
+*.gz
+*.tgz
+

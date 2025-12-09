@@ -1,0 +1,21 @@
+# Configuration de l'application Mathématiques - Statistiques
+# 
+# Instructions:
+# 1. Copiez ce fichier et renommez-le en .env
+# 2. Remplacez les valeurs par vos vraies clés
+#
+# Obtenez votre clé API Gemini sur: https://makersuite.google.com/app/apikey
+
+# Clé API Gemini (OBLIGATOIRE)
+GEMINI_API_KEY=your_api_key_here
+
+# Configuration Email pour notifications parent (OPTIONNEL)
+# Pour Gmail, vous devez créer un "App Password" :
+# 1. Aller dans votre compte Google > Sécurité
+# 2. Activer la validation en 2 étapes
+# 3. Créer un "Mot de passe d'application"
+# 4. Utiliser ce mot de passe ici (pas votre mot de passe Gmail normal)
+
+EMAIL_SENDER=your_email@gmail.com
+EMAIL_PASSWORD=your_app_password_here
+
